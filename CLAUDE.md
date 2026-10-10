@@ -29,7 +29,9 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 
 - **AppKit owns the app.** `AppDelegate` uses `static func main()` instead of a storyboard or SwiftUI `App`. It builds the menu and puts `ContentView` in an `NSHostingController` used as the window's `contentViewController`.
 - **SwiftUI → AppKit communication** goes through plain closures passed into the root view (e.g. `ContentView.onAction`). Don't add singletons or NotificationCenter for this.
+- **Why not `.sheet`:** by default a SwiftUI `.sheet` on macOS drops the glass effect of its content to avoid glass on glass. `glassedSheet` exists to keep glass inside sheets.
 - **Sheets:** use `.glassedSheet(isPresented:)` or `.glassedSheet(item:)`, not `.sheet`. Sheet content dismisses itself with `@Environment(\.dismissGlassedSheet)`. SwiftUI's `\.dismiss` does not work in these sheets.
+  Outside a `glassedSheet`, the default value of `dismissGlassedSheet` calls `EnvironmentValues().dismiss()` (see the `@Entry` in `GlassedSheet.swift`).
 
 ## glassedSheet internals (Sources/GlassedSheet/GlassedSheet.swift)
 
@@ -54,4 +56,5 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 
 ## Known open points
 
+- The default `dismissGlassedSheet` action calls `dismiss()` on a fresh `EnvironmentValues()`, not on the view's own environment, so it probably does nothing. To forward to a real SwiftUI `.sheet`, read `@Environment(\.dismiss)` inside a view and call it from there.
 - Not run interactively yet: check that Escape, Cancel and Create each reset the binding and call `onDismiss` exactly once.

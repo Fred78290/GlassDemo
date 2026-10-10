@@ -2,6 +2,18 @@
 
 A small macOS demo showing how to use the **Liquid Glass** APIs of SwiftUI inside a classic **AppKit** app. The app lifecycle, window, menu and sheet are AppKit; the content is SwiftUI hosted via `NSHostingController`.
 
+## Goal
+
+The main goal of this project is to get a **Liquid Glass effect inside a sheet**. Glass needs something behind it to be visible, and a sheet's content is where you most want it (form fields, icon pickers, Cancel/Create buttons).
+
+By default, a SwiftUI `.sheet` on macOS drops the glass effect of its content, to avoid "glass on glass" (the sheet is already a glass surface). The result is that `.glassEffect`, `.glass` button styles and the like render flat inside a sheet.
+
+To keep the glass, the sheet is presented through AppKit instead of SwiftUI's `.sheet`:
+
+- `glassedSheet` is a drop-in replacement for `.sheet(isPresented:)` and `.sheet(item:)`. It hosts your SwiftUI content in an `NSHostingController` and presents it with AppKit's `presentAsSheet`.
+- The sheet content (`SheetView`) then uses the glass APIs directly: `.glassEffect` on text fields, a `GlassEffectContainer` with morphing icon buttons, and `.glass` / `.glassProminent` buttons.
+- The logic is packaged as the standalone `GlassedSheet` library, so any SwiftUI view can use it.
+
 ## Requirements
 
 - macOS 26 (Tahoe) or later
