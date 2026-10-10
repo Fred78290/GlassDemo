@@ -1,13 +1,14 @@
+import GlassedSheet
 import SwiftUI
 
 struct ContentView: View {
     /// Called when the main glass button is tapped, so AppKit can react.
     var onAction: () -> Void = {}
-    /// Asks AppKit to present the sheet.
-    var onShowSheet: () -> Void = {}
 
     @State private var count = 0
     @State private var showExtras = false
+    @State private var showSheet = false
+    @State private var lastCreated: String?
     @Namespace private var glassNamespace
 
     var body: some View {
@@ -25,6 +26,12 @@ struct ContentView: View {
                     .font(.largeTitle.weight(.semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
+
+                if let lastCreated {
+                    Text(lastCreated)
+                        .font(.headline)
+                        .foregroundStyle(.white.opacity(0.85))
+                }
 
                 // 1. Standard system glass button styles.
                 HStack(spacing: 16) {
@@ -44,7 +51,7 @@ struct ContentView: View {
                     .keyboardShortcut(.defaultAction)
 
                     Button {
-                        onShowSheet()
+                        showSheet = true
                     } label: {
                         Label("Show Sheet", systemImage: "rectangle.portrait.on.rectangle.portrait")
                     }
@@ -67,7 +74,8 @@ struct ContentView: View {
                         .glassEffectID("toggle", in: glassNamespace)
 
                         if showExtras {
-                            ForEach(["star.fill", "heart.fill", "bolt.fill"], id: \.self) { symbol in
+                            ForEach(["star.fill", "heart.fill", "bolt.fill"], id: \.self) {
+                                symbol in
                                 Button {
                                     withAnimation { count += 1 }
                                 } label: {
@@ -76,7 +84,9 @@ struct ContentView: View {
                                         .frame(width: 44, height: 44)
                                 }
                                 .buttonStyle(.plain)
-                                .glassEffect(.regular.tint(.white.opacity(0.15)).interactive(), in: .circle)
+                                .glassEffect(
+                                    .regular.tint(.white.opacity(0.15)).interactive(), in: .circle
+                                )
                                 .glassEffectID(symbol, in: glassNamespace)
                             }
                         }
@@ -87,6 +97,12 @@ struct ContentView: View {
             .padding(40)
         }
         .frame(minWidth: 480, minHeight: 300)
+        // Drop-in replacement for .sheet(isPresented:content:)
+        .glassedSheet(isPresented: $showSheet) {
+            SheetView { name, symbol in
+                withAnimation { lastCreated = "Created “\(name)” (\(symbol))" }
+            }
+        }
     }
 }
 
