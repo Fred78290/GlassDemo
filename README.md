@@ -36,7 +36,7 @@ Or open `Package.swift` in Xcode and run the `GlassDemo` scheme.
 - **AppKit ↔ SwiftUI interop**:
   - A SwiftUI view hosted in an `NSWindow` through `NSHostingController` (transparent, full-size-content titlebar).
   - A SwiftUI closure calls back into AppKit to update the window subtitle.
-  - `glassedSheet`, a drop-in replacement for `.sheet` that presents SwiftUI content as a native AppKit sheet (`presentAsSheet`). Content dismisses itself with `@Environment(\.dismissGlassedSheet)`.
+  - `glassedSheet`, a drop-in replacement for `.sheet` that presents SwiftUI content as a native AppKit sheet (`presentAsSheet`). Content dismisses itself with `@Environment(\.dismissGlassedSheet)`, and Escape dismisses it as with `.sheet`.
 - A programmatic `@main` `NSApplicationDelegate` with a minimal main menu (no storyboards or nibs).
 
 ## Project layout
@@ -61,6 +61,13 @@ import GlassedSheet
 .glassedSheet(isPresented: $show) {
     MySheet() // dismiss with @Environment(\.dismissGlassedSheet)
 }
+```
+
+Escape closes the sheet. To keep it open while the content is busy, use `glassedSheetDismissDisabled` inside the sheet; SwiftUI's `interactiveDismissDisabled` has no effect on an AppKit-hosted sheet:
+
+```swift
+MySheetContent()
+    .glassedSheetDismissDisabled(isSaving)
 ```
 
 ## Using the app

@@ -31,7 +31,8 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 - **SwiftUI → AppKit communication** goes through plain closures passed into the root view (e.g. `ContentView.onAction`). Don't add singletons or NotificationCenter for this.
 - **Why not `.sheet`:** by default a SwiftUI `.sheet` on macOS drops the glass effect of its content to avoid glass on glass. `glassedSheet` exists to keep glass inside sheets.
 - **Sheets:** use `.glassedSheet(isPresented:)` or `.glassedSheet(item:)`, not `.sheet`. Sheet content dismisses itself with `@Environment(\.dismissGlassedSheet)`. SwiftUI's `\.dismiss` does not work in these sheets.
-  Outside a `glassedSheet`, the default value of `dismissGlassedSheet` calls `EnvironmentValues().dismiss()` (see the `@Entry` in `GlassedSheet.swift`).
+  Escape also dismisses a glassed sheet. To prevent that (e.g. while saving), use `.glassedSheetDismissDisabled(_:)`: `.interactiveDismissDisabled(_:)` has no effect on an AppKit-hosted sheet.
+  Outside a `glassedSheet`, the default value of `dismissGlassedSheet` does nothing (see the `@Entry` in `GlassedSheet.swift`).
 
 ## glassedSheet internals (Sources/GlassedSheet/GlassedSheet.swift)
 
@@ -42,6 +43,11 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 - All AppKit work is deferred with `scheduleSync()` (a `Task { @MainActor }`), so the modifier never mutates state during a SwiftUI update. Keep it that way.
 - While the sheet is open, `hostingController.rootView` is rebuilt on each parent update so the content stays live.
 - The sheet content is wrapped in `GlassedSheetRoot`, which injects `dismissGlassedSheet`. `requestDismiss()` sets the binding to `false` and starts the dismissal.
+- **Escape.** AppKit never closes an attached sheet by itself (Escape and ⌘W are ignored), so `GlassedSheetHostingController` overrides `cancelOperation(_:)` and calls `onCancel`. The coordinator turns that into `requestDismiss()` unless dismissal is disabled. `cancelOperation` runs after key equivalents, so a button with `.keyboardShortcut(.cancelAction)` (like `SheetView`'s Cancel) still gets Escape first.
+  Never call `super.cancelOperation(_:)`: `NSResponder` declares it without implementing it, and forwarding crashes with "unrecognized selector".
+- With nothing focused, the sheet window is its own first responder and Escape never reaches `cancelOperation(_:)`. While the sheet is visible, a local `keyDown` monitor makes the hosting view first responder when Escape is pressed. It doesn't consume or change the event.
+- `glassedSheetDismissDisabled(_:)` sets the `GlassedSheetDismissDisabledKey` preference (OR-reduced), which `GlassedSheetRoot` forwards to the coordinator's `isDismissDisabled`. It also applies `interactiveDismissDisabled(_:)`, for the `.sheet` fallback.
+- The `.sheet` fallback (macOS < 26, unreachable with this package's `.macOS(.v26)` platform) wraps the content in `GlassedSheetFallbackRoot`, which forwards `dismissGlassedSheet` to the sheet's own `@Environment(\.dismiss)`.
 - The `item:` variant maps to the Bool variant. Changing the item while the sheet is open updates the content in place; it does not re-present the sheet.
 - The sheet window uses the system's default appearance. Any glass look comes from the sheet content (see `SheetView`).
 
@@ -56,5 +62,5 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 
 ## Known open points
 
-- The default `dismissGlassedSheet` action calls `dismiss()` on a fresh `EnvironmentValues()`, not on the view's own environment, so it probably does nothing. To forward to a real SwiftUI `.sheet`, read `@Environment(\.dismiss)` inside a view and call it from there.
-- Not run interactively yet: check that Escape, Cancel and Create each reset the binding and call `onDismiss` exactly once.
+- Not run interactively yet: check that Cancel and Create each reset the binding and call `onDismiss` exactly once.
+  Escape was checked with a scripted test that sends synthesized key events: it resets the binding and calls `onDismiss` once, `glassedSheetDismissDisabled` blocks it, a `.cancelAction` button takes precedence, and only the top sheet of a stack closes. Synthesized key events are only delivered while the app is active, so such a test fails if it runs in the background.
