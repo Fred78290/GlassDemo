@@ -2,8 +2,6 @@
 
 *SwiftUI's `.sheet` turns off the glass inside your sheet on macOS 26. A sheet presented by AppKit keeps it. This article shows how that works, and introduces GlassedSheet, a small Swift package that gives you the AppKit version with the `.sheet` API.*
 
-*[Screenshot: the GlassDemo "New Item" sheet, with glass text fields, a glass symbol picker and glass Cancel/Create buttons, over the gradient window]*
-
 macOS 26 Tahoe brought Liquid Glass to the Mac, and SwiftUI makes it easy to use: `.buttonStyle(.glass)`, `.glassEffect()`, `GlassEffectContainer`, morphing with `glassEffectID`. So you build a small form with glass text fields, a row of glass icon buttons and a prominent glass "Create" button, and it looks great in your window.
 
 Then you put that form in a sheet:
