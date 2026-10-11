@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var count = 0
     @State private var showExtras = false
     @State private var showSheet = false
+    @State private var showSystemSheet = false
     @State private var lastCreated: String?
     @Namespace private var glassNamespace
 
@@ -49,11 +50,22 @@ struct ContentView: View {
                     .buttonStyle(.glassProminent)
                     .tint(.blue)
                     .keyboardShortcut(.defaultAction)
+                }
+                .controlSize(.large)
+
+                // The same SheetView, presented both ways to compare them.
+                HStack(spacing: 16) {
+                    Button {
+                        showSystemSheet = true
+                    } label: {
+                        Label("System Sheet", systemImage: "rectangle.portrait")
+                    }
+                    .buttonStyle(.glass)
 
                     Button {
                         showSheet = true
                     } label: {
-                        Label("Show Sheet", systemImage: "rectangle.portrait.on.rectangle.portrait")
+                        Label("Glass Sheet", systemImage: "rectangle.portrait.on.rectangle.portrait")
                     }
                     .buttonStyle(.glass)
                 }
@@ -96,16 +108,42 @@ struct ContentView: View {
             }
             .padding(40)
         }
-        .frame(minWidth: 480, minHeight: 300)
+        .frame(minWidth: 480, minHeight: 360)
+        // SwiftUI's own sheet: macOS flattens the glass inside it.
+        .sheet(isPresented: $showSystemSheet) {
+            SystemSheetRoot {
+                SheetView { name, symbol in
+                    withAnimation { lastCreated = "Created “\(name)” (\(symbol)) in the system sheet" }
+                }
+            }
+        }
         // Drop-in replacement for .sheet(isPresented:content:)
         .glassedSheet(isPresented: $showSheet) {
             SheetView { name, symbol in
-                withAnimation { lastCreated = "Created “\(name)” (\(symbol))" }
+                withAnimation { lastCreated = "Created “\(name)” (\(symbol)) in the glass sheet" }
             }
         }
     }
 }
 
+/// Lets `SheetView` close a regular `.sheet`: forwards `dismissGlassedSheet` to SwiftUI's `dismiss`.
+private struct SystemSheetRoot<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        content
+            .environment(\.dismissGlassedSheet, GlassedSheetDismissAction { dismiss() })
+    }
+}
+
 #Preview {
     ContentView()
+}
+
+#Preview("System sheet root") {
+    SystemSheetRoot {
+        SheetView()
+    }
 }
