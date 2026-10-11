@@ -14,6 +14,8 @@ To keep the glass, the sheet is presented through AppKit instead of SwiftUI's `.
 - The sheet content (`SheetView`) then uses the glass APIs directly: `.glassEffect` on text fields, a `GlassEffectContainer` with morphing icon buttons, and `.glass` / `.glassProminent` buttons.
 - The logic is packaged as the standalone `GlassedSheet` library, so any SwiftUI view can use it.
 
+For a step-by-step walkthrough of how to use `glassedSheet` and how it works under the hood, read the article [Liquid Glass in a macOS Sheet: Why SwiftUI Flattens It and How to Get It Back](docs/medium-article.md).
+
 ## Requirements
 
 - macOS 26 (Tahoe) or later
@@ -49,6 +51,8 @@ Sources/GlassDemo/
 └── SheetView.swift     # Sheet content: form fields and symbol picker
 Sources/GlassedSheet/
 └── GlassedSheet.swift  # Reusable library: glassedSheet modifier and its AppKit bridge
+docs/
+└── medium-article.md   # Article: getting a glass sheet with glassedSheet
 ```
 
 ## Using GlassedSheet in another project
