@@ -8,6 +8,12 @@ import SwiftUI
 public struct GlassedSheetDismissAction {
 	fileprivate let action: @MainActor () -> Void
 
+	/// Creates a dismiss action, e.g. to let content written for a glassed sheet close another
+	/// kind of presentation: `.environment(\.dismissGlassedSheet, GlassedSheetDismissAction { dismiss() })`.
+	public init(action: @escaping @MainActor () -> Void) {
+		self.action = action
+	}
+
 	@MainActor
 	public func callAsFunction() { action() }
 }

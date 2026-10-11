@@ -19,7 +19,7 @@ swift run
 Package.swift
 Sources/GlassDemo/
   AppDelegate.swift    // @main entry: NSApplication, menu, main NSWindow hosting ContentView
-  ContentView.swift    // main SwiftUI screen: glass buttons, morphing glass group, owns the `showSheet` state
+  ContentView.swift    // main SwiftUI screen: glass buttons, morphing glass group, presents SheetView with `.sheet` and `glassedSheet` side by side
   SheetView.swift      // content presented in a glassedSheet
 Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no dependency on the demo
   GlassedSheet.swift   // the glassedSheet modifier and its AppKit bridge
@@ -30,7 +30,7 @@ Sources/GlassedSheet/  // standalone library target (product "GlassedSheet"), no
 - **AppKit owns the app.** `AppDelegate` uses `static func main()` instead of a storyboard or SwiftUI `App`. It builds the menu and puts `ContentView` in an `NSHostingController` used as the window's `contentViewController`.
 - **SwiftUI → AppKit communication** goes through plain closures passed into the root view (e.g. `ContentView.onAction`). Don't add singletons or NotificationCenter for this.
 - **Why not `.sheet`:** by default a SwiftUI `.sheet` on macOS drops the glass effect of its content to avoid glass on glass. `glassedSheet` exists to keep glass inside sheets.
-- **Sheets:** use `.glassedSheet(isPresented:)` or `.glassedSheet(item:)`, not `.sheet`. Sheet content dismisses itself with `@Environment(\.dismissGlassedSheet)`. SwiftUI's `\.dismiss` does not work in these sheets.
+- **Sheets:** use `.glassedSheet(isPresented:)` or `.glassedSheet(item:)`, not `.sheet` (the demo's **System Sheet** button is the one deliberate `.sheet`, for comparison; it wraps the content in `SystemSheetRoot` so `dismissGlassedSheet` still works). Sheet content dismisses itself with `@Environment(\.dismissGlassedSheet)`. SwiftUI's `\.dismiss` does not work in these sheets.
   Escape also dismisses a glassed sheet. To prevent that (e.g. while saving), use `.glassedSheetDismissDisabled(_:)`: `.interactiveDismissDisabled(_:)` has no effect on an AppKit-hosted sheet.
   Outside a `glassedSheet`, the default value of `dismissGlassedSheet` does nothing (see the `@Entry` in `GlassedSheet.swift`).
 

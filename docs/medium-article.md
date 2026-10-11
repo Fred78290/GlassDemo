@@ -404,7 +404,7 @@ cd GlassDemo
 swift run
 ```
 
-Click **Show Sheet**, type a name, pick a symbol and press **Create**. You can also open `Package.swift` in Xcode and run the `GlassDemo` scheme.
+Click **Glass Sheet**, type a name, pick a symbol and press **Create**. Then click **System Sheet**: it opens the same form with SwiftUI's `.sheet`, so you can see the glass flattened side by side. You can also open `Package.swift` in Xcode and run the `GlassDemo` scheme.
 
 *[GIF: opening the sheet, picking a symbol and pressing Create]*
 

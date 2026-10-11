@@ -78,5 +78,5 @@ MySheetContent()
 
 - **Tap me**: increments the counter and shows the time of the last tap in the window subtitle.
 - **Reset**: sets the counter back to zero.
-- **Show Sheet**: opens a "New Item" sheet. Enter a name, pick a symbol and press **Create** to see the result in the main view.
+- **Glass Sheet**: opens a "New Item" sheet with `glassedSheet`. **System Sheet** opens the same view with SwiftUI's `.sheet`, so you can compare: the glass is flattened there. Enter a name, pick a symbol and press **Create** to see the result in the main view.
 - **+ button**: expands the extra glass buttons (star, heart, bolt). Each one also increments the counter.
