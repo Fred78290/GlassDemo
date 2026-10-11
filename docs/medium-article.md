@@ -20,7 +20,11 @@ Your code isn't at fault. On macOS a SwiftUI sheet is already a glass surface, s
 
 In this article I'll show how to keep it. The short version: present the same SwiftUI view as a native AppKit sheet instead of going through SwiftUI's `.sheet`. The long version is a reusable modifier, `glassedSheet`, packaged as a small library in the [GlassDemo](https://github.com/Fred78290/GlassDemo) repository. We'll use it first, then look at how it works.
 
-*[Screenshot: the same form side by side, presented with `.sheet` (flat) and with `.glassedSheet` (glass)]*
+![The New Item form presented with SwiftUI's .sheet](https://raw.githubusercontent.com/Fred78290/GlassDemo/main/docs/images/system-sheet.png)
+*Presented with SwiftUI's `.sheet`: the glass is flattened.*
+
+![The New Item form presented with .glassedSheet](https://raw.githubusercontent.com/Fred78290/GlassDemo/main/docs/images/glass-sheet.png)
+*Presented with `.glassedSheet`: the glass is kept.*
 
 ## The idea
 
