@@ -18,11 +18,11 @@ Your code isn't at fault. On macOS a SwiftUI sheet is already a glass surface, s
 
 In this article I'll show how to keep it. The short version: present the same SwiftUI view as a native AppKit sheet instead of going through SwiftUI's `.sheet`. The long version is a reusable modifier, `glassedSheet`, packaged as a small library in the [GlassDemo](https://github.com/Fred78290/GlassDemo) repository. We'll use it first, then look at how it works.
 
-![The New Item form presented with SwiftUI's .sheet](https://raw.githubusercontent.com/Fred78290/GlassDemo/main/docs/images/system-sheet.png)
-*Presented with SwiftUI's `.sheet`: the glass is flattened.*
+<p align="center"><img src="./images/system-sheet.png" alt="The New Item form presented with SwiftUI's .sheet"><br>
+<em>Presented with SwiftUI's <code>.sheet</code>: the glass is flattened.</em></p>
 
-![The New Item form presented with .glassedSheet](https://raw.githubusercontent.com/Fred78290/GlassDemo/main/docs/images/glass-sheet.png)
-*Presented with `.glassedSheet`: the glass is kept.*
+<p align="center"><img src="./images/glass-sheet.png" alt="The New Item form presented with .glassedSheet"><br>
+<em>Presented with <code>.glassedSheet</code>: the glass is kept.</em></p>
 
 ## The idea
 
@@ -240,7 +240,8 @@ Two requirements follow from this: the host window must have a `contentViewContr
 
 Also remember that glass needs something behind it to be visible. The demo's main window draws a colourful gradient for exactly that reason.
 
-*[Screenshot: the demo's main window, with the gradient, the glass buttons and the expanded `+` group]*
+<p align="center"><img src="./images/main-screen.png" alt="The demo's main window: a colourful gradient background with Liquid Glass buttons"><br>
+<em>The demo's main window: the colourful gradient gives the Liquid Glass buttons something to refract.</em></p>
 
 ## Under the hood
 
