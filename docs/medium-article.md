@@ -408,8 +408,6 @@ swift run
 
 Click **Glass Sheet**, type a name, pick a symbol and press **Create**. Then click **System Sheet**: it opens the same form with SwiftUI's `.sheet`, so you can see the glass flattened side by side. You can also open `Package.swift` in Xcode and run the `GlassDemo` scheme.
 
-*[GIF: opening the sheet, picking a symbol and pressing Create]*
-
 ## Wrapping up
 
 Flattening glass in sheets is a sensible default in SwiftUI, but it isn't the only option. Hosting the content in an `NSHostingController` and presenting it with `presentAsSheet` keeps the glass. Most of the work is restoring what `.sheet` gave you for free: a binding, `onDismiss`, self-dismissal, Escape and live content. `glassedSheet` wraps that into a drop-in modifier, so switching an existing sheet takes one line in the presenting view and one environment value in the sheet.
