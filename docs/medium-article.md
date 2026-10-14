@@ -404,13 +404,91 @@ The modifier checks `#available(macOS 26.0, *)` and otherwise falls back to a re
 
 The package builds in the Swift 6 language mode. The coordinator is `@MainActor`, closures stored by AppKit objects capture `[weak self]`, and AppKit callbacks that run on the main thread (the event monitor, the controller callbacks) enter the main actor with `MainActor.assumeIsolated`.
 
+## Avoiding the Update Constraints loop
+
+The exception from [The host window](#the-host-window) always has the same shape: something in the window invalidates its constraints, the constraints pass changes a size, and that size change invalidates them again. AppKit allows one pass per view, then gives up. These rules break the loop at each place it can start.
+
+**1. Give the main window's hosting controller only a minimum size.** Put the minimum on the SwiftUI side and let the window resize freely:
+
+```swift
+let hostingController = NSHostingController(rootView: ContentView())
+hostingController.sizingOptions = [.minSize]   // not the default .standardBounds
+
+// ContentView
+.frame(minWidth: 480, minHeight: 360)
+```
+
+**2. Size a sheet from `preferredContentSize`, not from constraints.** `glassedSheet` already does it. If you present your own `NSHostingController` as a sheet, do the same, and don't also resize the sheet window by hand (`setContentSize`, `setFrame`): two owners of the same size fight.
+
+```swift
+let sheetController = NSHostingController(rootView: MySheet())
+sheetController.sizingOptions = [.preferredContentSize]
+presenter.presentAsSheet(sheetController)
+```
+
+**3. Give the sheet content a size that doesn't depend on its container.** The sheet window follows the content, so content that follows the window has nothing stable to settle on. Use a fixed width (or an ideal size) on the root of the sheet, and keep `GeometryReader` and `maxWidth: .infinity` inside that frame:
+
+```swift
+// Loops: the content asks the window for its size, and the window asks the content.
+GeometryReader { proxy in
+    Form { … }.frame(width: proxy.size.width)
+}
+
+// Stable: the root has its own width, children can fill it.
+VStack(alignment: .leading, spacing: 20) {
+    …
+    HStack { … }.frame(maxWidth: .infinity)
+}
+.padding(24)
+.frame(width: 380)
+```
+
+**4. Keep the sheet's state in the sheet's view.** Pass values in and results out through a closure, as `SheetView` does. The parent then doesn't need to rebuild the sheet's root view each time it changes, and the sheet doesn't re-lay out for state it doesn't show:
+
+```swift
+// Parent: no parent state read inside the sheet's content.
+.glassedSheet(isPresented: $showSheet) {
+    SheetView { name, symbol in lastCreated = name }
+}
+
+// Sheet: its own @State.
+struct SheetView: View {
+    var onConfirm: (String, String) -> Void
+    @State private var name = ""
+    …
+}
+```
+
+This is also Apple's suggested workaround for this exception with a plain `.sheet`: move the sheet's content and the state it reads into its own view.
+
+**5. Don't let a measured size change the measured view.** Writing a size from `onGeometryChange` (or a `GeometryReader`) into state is fine when that state drives something else. When it drives the same view's frame, it loops. Round the value, and compare before writing:
+
+```swift
+.onGeometryChange(for: CGFloat.self) { $0.size.width.rounded() } action: { width in
+    if width != measuredWidth { measuredWidth = width }   // and don't feed it back into this view's frame
+}
+```
+
+**6. Never do AppKit layout work during a SwiftUI update.** Presenting, dismissing, resizing a window or setting `preferredContentSize` from `body`, `updateNSView` or a layout callback starts a new pass inside the current one. Defer it to the next turn of the main actor, as `scheduleSync()` does:
+
+```swift
+func updateNSView(_ nsView: NSView, context: Context) {
+    let coordinator = context.coordinator
+    Task { @MainActor in
+        coordinator.sync()   // present, dismiss, resize here
+    }
+}
+```
+
+When the exception still happens, add an exception breakpoint in Xcode and look at the stack: the frames above `-[NSView setNeedsUpdateConstraints:]` (often `NSHostingView` `requestUpdate`) name the view that keeps asking for another pass.
+
 ## Gotchas
 
 - Inside the sheet, use `@Environment(\.dismissGlassedSheet)`, not `\.dismiss`.
 - Use `glassedSheetDismissDisabled(_:)`, not `interactiveDismissDisabled(_:)`.
 - The host window needs a `contentViewController` that isn't already presenting something. A `glassedSheet` used inside sheet content is fine: it's presented on top, on the sheet's own window.
 - Give the sheet content a width or an ideal size: the sheet takes its content's preferred size. Content whose size depends on its container (a `GeometryReader` at the root, `maxWidth: .infinity` with no width, `onGeometryChange` writing state that changes the size) can resize the sheet window in a loop.
-- If AppKit reports "The window has been marked as needing another Update Constraints in Window pass…", look for a layout feedback loop: a hosting controller using the default `.standardBounds` in a resizable window, content sized by its container, or state written during layout. Use `sizingOptions = [.minSize]` on the main window's hosting controller, give the sheet content a fixed width, and keep the sheet's state inside the sheet's view.
+- If AppKit reports "The window has been marked as needing another Update Constraints in Window pass…", see [Avoiding the Update Constraints loop](#avoiding-the-update-constraints-loop).
 - macOS 26 and Xcode 26 only. Don't lower the deployment target: the glass APIs don't exist below it.
 
 ## Try it

@@ -76,11 +76,19 @@ MySheetContent()
 
 ## Troubleshooting
 
-**"The window has been marked as needing another Update Constraints in Window pass, but it has already had more Update Constraints in Window passes than there are views in the window."** AppKit raises this when a layout feedback loop keeps invalidating the window's constraints; the app then hangs or crashes. With SwiftUI hosted in AppKit, the usual sources are:
+**"The window has been marked as needing another Update Constraints in Window pass, but it has already had more Update Constraints in Window passes than there are views in the window."** AppKit raises this when a layout feedback loop keeps invalidating the window's constraints; the app then hangs or crashes. To avoid it:
 
-- An `NSHostingController` with the default `sizingOptions` (`.standardBounds`) in a resizable window. The demo uses `[.minSize]` for the main window and `glassedSheet` uses `[.preferredContentSize]` for the sheet; keep it that way.
-- Sheet content whose size depends on its container (root `GeometryReader`, `maxWidth: .infinity` without a width). Give it a fixed width or an ideal size, like `SheetView`'s `.frame(width: 380)`.
-- Sheet content that reads a lot of parent state, so every parent update rebuilds it. Keep the sheet's state in the sheet's own view.
+1. Give the main window's `NSHostingController` only a minimum size, and set the minimum in SwiftUI with `.frame(minWidth:minHeight:)`:
+   ```swift
+   hostingController.sizingOptions = [.minSize]   // not the default .standardBounds
+   ```
+2. Size a sheet from its content with `sizingOptions = [.preferredContentSize]` (`glassedSheet` already does), and don't also resize the sheet window by hand.
+3. Give the sheet's root view a fixed width or an ideal size, like `SheetView`'s `.frame(width: 380)`. No root `GeometryReader`, no `maxWidth: .infinity` without a width around it.
+4. Keep the sheet's state in the sheet's own view: pass values in and results out through a closure, rather than reading parent state in the content closure.
+5. Don't write a measured size (`onGeometryChange`, `GeometryReader`) into state that resizes the same view. Round it and compare before writing.
+6. Never present, dismiss or resize from `body` or `updateNSView`: defer AppKit work with `Task { @MainActor in … }`.
+
+The article's [Avoiding the Update Constraints loop](docs/medium-article.md#avoiding-the-update-constraints-loop) section has the details and code for each rule.
 
 ## Using the app
 
