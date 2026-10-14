@@ -294,6 +294,8 @@ private final class GlassedSheetCoordinator<Content: View> {
 		let sheetController = GlassedSheetHostingController(
 			rootView: makeRoot()
 		)
+		// Size the sheet from the content's ideal size, without min/intrinsic/max constraints: those can
+		// fight the sheet window and raise "needing another Update Constraints in Window pass".
 		sheetController.sizingOptions = [.preferredContentSize]
 		sheetController.onDisappear = { [weak self, weak sheetController] in
 			MainActor.assumeIsolated {

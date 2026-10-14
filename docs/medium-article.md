@@ -238,6 +238,15 @@ window.makeKeyAndOrderFront(nil)
 
 Two requirements follow from this: the host window must have a `contentViewController`, and that controller must not already be presenting another view controller. If either is not met, the sheet isn't shown.
 
+The `sizingOptions = [.minSize]` line is not decoration. By default an `NSHostingController` uses `.standardBounds`: it adds Auto Layout constraints for the minimum, intrinsic and maximum size of its SwiftUI content. In a resizable window those constraints keep negotiating with the window frame, and when the content's size depends on the space it gets (gradients, `maxWidth: .infinity`, `GeometryReader`, Liquid Glass containers that morph), every pass can mark the window as needing another one. AppKit gives up with an exception and the app hangs or crashes:
+
+```
+The window has been marked as needing another Update Constraints in Window pass,
+but it has already had more Update Constraints in Window passes than there are views in the window.
+```
+
+Keeping only `.minSize` lets the user resize the window freely while SwiftUI still enforces the content's `minWidth`/`minHeight`, and removes the constraints that feed that loop.
+
 Also remember that glass needs something behind it to be visible. The demo's main window draws a colourful gradient for exactly that reason.
 
 <p align="center"><img src="./images/main-screen.png" alt="The demo's main window: a colourful gradient background with Liquid Glass buttons"><br>
@@ -306,6 +315,8 @@ private func present() {
 }
 ```
 
+`sizingOptions = [.preferredContentSize]` is deliberate too. The sheet window takes its size from the controller's `preferredContentSize`, which follows the content's ideal size. The hosting view adds no min/intrinsic/max constraints of its own, so it can't start the "Update Constraints in Window pass" loop described in [The host window](#the-host-window) with the sheet window. Don't add `.intrinsicContentSize` or `.standardBounds` here.
+
 `makeRoot()` wraps your content in a small `GlassedSheetRoot` view that injects `dismissGlassedSheet` into the environment. Dismissing is the mirror image, `presenter.dismiss(hostingController)`. There's no `beginSheet`/`endSheet`: view controller presentation provides a lifecycle to hook into, as we'll see.
 
 ### Keeping the content live
@@ -320,6 +331,8 @@ if let hostingController {
 ```
 
 That's also what lets the `item:` variant update in place.
+
+Each assignment of `rootView` invalidates the sheet's hosting view. That's why it happens in `sync()`, after the `scheduleSync()` hop, and never inside a layout or constraints pass. Keep the sheet's own state in the sheet's view (as `SheetView` does with `@State`) rather than reading parent state from the content closure: the parent then rarely needs to rebuild the sheet, which is also Apple's suggested workaround for this error with a plain `.sheet`.
 
 ### One exit door
 
@@ -396,7 +409,8 @@ The package builds in the Swift 6 language mode. The coordinator is `@MainActor`
 - Inside the sheet, use `@Environment(\.dismissGlassedSheet)`, not `\.dismiss`.
 - Use `glassedSheetDismissDisabled(_:)`, not `interactiveDismissDisabled(_:)`.
 - The host window needs a `contentViewController` that isn't already presenting something. A `glassedSheet` used inside sheet content is fine: it's presented on top, on the sheet's own window.
-- Give the sheet content a width or an ideal size: the sheet takes its content's preferred size.
+- Give the sheet content a width or an ideal size: the sheet takes its content's preferred size. Content whose size depends on its container (a `GeometryReader` at the root, `maxWidth: .infinity` with no width, `onGeometryChange` writing state that changes the size) can resize the sheet window in a loop.
+- If AppKit reports "The window has been marked as needing another Update Constraints in Window pass…", look for a layout feedback loop: a hosting controller using the default `.standardBounds` in a resizable window, content sized by its container, or state written during layout. Use `sizingOptions = [.minSize]` on the main window's hosting controller, give the sheet content a fixed width, and keep the sheet's state inside the sheet's view.
 - macOS 26 and Xcode 26 only. Don't lower the deployment target: the glass APIs don't exist below it.
 
 ## Try it
