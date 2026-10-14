@@ -74,6 +74,14 @@ MySheetContent()
     .glassedSheetDismissDisabled(isSaving)
 ```
 
+## Troubleshooting
+
+**"The window has been marked as needing another Update Constraints in Window pass, but it has already had more Update Constraints in Window passes than there are views in the window."** AppKit raises this when a layout feedback loop keeps invalidating the window's constraints; the app then hangs or crashes. With SwiftUI hosted in AppKit, the usual sources are:
+
+- An `NSHostingController` with the default `sizingOptions` (`.standardBounds`) in a resizable window. The demo uses `[.minSize]` for the main window and `glassedSheet` uses `[.preferredContentSize]` for the sheet; keep it that way.
+- Sheet content whose size depends on its container (root `GeometryReader`, `maxWidth: .infinity` without a width). Give it a fixed width or an ideal size, like `SheetView`'s `.frame(width: 380)`.
+- Sheet content that reads a lot of parent state, so every parent update rebuilds it. Keep the sheet's state in the sheet's own view.
+
 ## Using the app
 
 - **Tap me**: increments the counter and shows the time of the last tap in the window subtitle.

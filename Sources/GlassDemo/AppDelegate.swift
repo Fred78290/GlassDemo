@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Host the SwiftUI view inside an AppKit window.
         let hostingController = NSHostingController(rootView: rootView)
+        // Only a minimum size: the default .standardBounds constraints fight a resizable window and
+        // can loop until AppKit raises "needing another Update Constraints in Window pass".
         hostingController.sizingOptions = [.minSize]
 
         window = NSWindow(contentViewController: hostingController)
